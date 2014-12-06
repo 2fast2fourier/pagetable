@@ -5,6 +5,8 @@ function loadInit(){
     game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
 }
 
+var destroyableWalls = [461,442];
+
 var introData = [
 457,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,461,443,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,442,
@@ -18,6 +20,7 @@ var introData = [
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
+442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
@@ -31,12 +34,11 @@ var introData = [
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
+442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
-442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
-442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
-442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
-442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
+442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
+442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
 442,  2,  3,  4,  5,  6,  7,  8,  9, 12,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 11, 12, 13, 14, 15,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,442,
@@ -68,6 +70,7 @@ var SCREEN_HEIGHT = 600;
 var WIDTH = 16;
 var SCREENX = 48;
 var OFFSETX = 16, OFFSETY = 12;
+var BULLET_VELOCITY = 300;
 
 function p2x(pos){
     return pos%SCREENX;
@@ -82,11 +85,15 @@ var level = introData;
 var walls;
 var text;
 var background;
-var arrows;
+var controls;
 var fire;
+var bulletDelay = 0;
 
 function create() {
+    game.physics.startSystem(Phaser.Physics.ARCADE);
+
     background = game.add.tileSprite(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 'white32');
+
     game.add.tileSprite(0, 0, SCREEN_WIDTH, 5, 'borderTop');
     game.add.tileSprite(0, SCREEN_HEIGHT-5, SCREEN_WIDTH, 5, 'borderBottom');
     game.add.tileSprite(0, 0, 5, SCREEN_HEIGHT, 'borderLeft');
@@ -108,25 +115,33 @@ function create() {
         }
     });
 
-    game.physics.startSystem(Phaser.Physics.ARCADE);
-
-    player = game.add.sprite(400, 500, 'colorCircle16', 3);
+    player = game.add.sprite(400, 500, 'termfont', 383);
     player.anchor.setTo(0.5, 0.5);
     game.physics.enable(player, Phaser.Physics.ARCADE);
+    player.body.allowRotation = true;
 
-    walls = game.add.group();
-    walls.enableBody = true;
-    walls.physicsBodyType = Phaser.Physics.ARCADE;
-    walls.createMultiple(30, 'colorCircle16', 5);
-    walls.setAll('anchor.x', 0.5);
-    walls.setAll('anchor.y', 0.5);
-    walls.setAll('body.immovable', true);
-    walls.forEach(function(wall){
-        var pos = wall.z;
-        wall.reset(pos*16, pos*16);
-    });
+    // walls = game.add.group();
+    // walls.enableBody = true;
+    // walls.physicsBodyType = Phaser.Physics.ARCADE;
+    // walls.createMultiple(30, 'colorCircle16', 5);
+    // walls.setAll('anchor.x', 0.5);
+    // walls.setAll('anchor.y', 0.5);
+    // walls.setAll('body.immovable', true);
+    // walls.forEach(function(wall){
+    //     var pos = wall.z;
+    //     wall.reset(pos*16, pos*16);
+    // });
 
-    arrows = game.input.keyboard.createCursorKeys();
+    bullets = game.add.group();
+    bullets.enableBody = true;
+    bullets.physicsBodyType = Phaser.Physics.ARCADE;
+    bullets.createMultiple(10, 'termfont', 254);
+    bullets.setAll('anchor.x', 0.5);
+    bullets.setAll('anchor.y', 0.5);
+    bullets.setAll('outOfBoundsKill', true);
+    bullets.setAll('checkWorldBounds', true);
+
+    controls = game.input.keyboard.createCursorKeys();
     fire = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
     
 }
@@ -136,24 +151,31 @@ function update() {
     if (player.alive){
         player.body.velocity.setTo(0, 0);
 
-        if (arrows.left.isDown){
+        if (controls.left.isDown){
             player.body.velocity.x = -200;
+            player.body.rotation = 270;
         }
-        if (arrows.right.isDown){
+        if (controls.right.isDown){
             player.body.velocity.x = 200;
+            player.body.rotation = 90;
         }
-        if (arrows.up.isDown){
+        if (controls.up.isDown){
             player.body.velocity.y = -200;
+            player.body.rotation = 0;
         }
-        if (arrows.down.isDown){
+        if (controls.down.isDown){
             player.body.velocity.y = 200;
+            player.body.rotation = 180;
         }
         if (fire.isDown){
-            fire();
+            playerFire();
         }
 
         game.physics.arcade.collide(text, player, collisionHandler);
-        game.physics.arcade.collide(walls, player, collisionHandler);
+        // game.physics.arcade.collide(walls, player, collisionHandler);
+
+        // game.physics.arcade.overlap(bullets, enemies, bulletHit);
+        game.physics.arcade.overlap(bullets, text, bulletHitText);
 
         if(player.body.x > SCREEN_WIDTH){
             player.body.x = 0;
@@ -172,15 +194,44 @@ function update() {
 }
 
 function render() {
+    // text.forEachAlive(function(pt){
+    //     game.debug.body(pt);
+    // });
+}
+
+function collisionHandler(wall, player) {
 
 }
 
-function collisionHandler (wall, player) {
+function bulletHitText(bullet, wall) {
+    bullet.kill();
+    var wallType = wall.frame;
+    console.log('hit', wallType);
 
 }
 
-function restart () {
+function playerFire(){
+    if (game.time.now > bulletDelay){
+        bullet = bullets.getFirstExists(false);
+        if (bullet){
+            bullet.reset(player.x, player.y);
+            bullet.body.velocity.x = Math.sin(deg2rad(player.body.rotation))*BULLET_VELOCITY;
+            bullet.body.velocity.y = -Math.cos(deg2rad(player.body.rotation))*BULLET_VELOCITY;
+            bulletDelay = game.time.now + 500;
+        }
+    }
+}
 
+function restart() {
+
+}
+
+function deg2rad(deg){
+    return deg*(Math.PI/180);
+}
+
+function rad2deg(rad){
+    return rad*(180/Math.PI);
 }
 
 
