@@ -20,7 +20,10 @@ function preload() {
     game.load.spritesheet('termfont', 'font16.png', 16, 16);
     game.load.spritesheet('colorCircle16', 'colorCircle16.png', 16, 16);
 
-    game.load.json('leveldata', 'levels.json');
+    game.load.json('leveldata', 'leveldata.json');
+
+    game.load.audio('sfxfire', 'fire.wav');
+    game.load.audio('sfxexplosion', 'explosion.wav');
 
 
 }
@@ -31,7 +34,7 @@ var WIDTH = 16;
 var SCREENX = 48;
 var OFFSETX = 16, OFFSETY = 12;
 var BULLET_VELOCITY = 300;
-var BULLET_DELAY = 250;
+var BULLET_DELAY = 200;
 
 function p2x(pos){
     return pos%SCREENX;
@@ -44,6 +47,9 @@ function p2y(pos){
 var levelData;
 var player;
 var level;
+var levelNumber = 0;
+var levelCols = 3;
+var levelCount;
 var walls;
 var text;
 var background;
@@ -52,10 +58,18 @@ var fire;
 var bulletDelay = 0;
 var paused = false;
 var bulletGroup, textGroup, playerGroup;
+var sfxFire, sfxExplosion;
 
 function create() {
-    levelData = game.cache.getJSON('leveldata') || {data: [{}]};
-    level = levelData.data[0];
+    levelData = game.cache.getJSON('leveldata');
+    levelCount = levelData.data.length;
+    level = levelData.data[levelNumber];
+
+    sfxFire = game.add.audio('sfxfire');
+    sfxExplosion = game.add.audio('sfxexplosion');
+    sfxFire.allowMultiple = true;
+    sfxExplosion.allowMultiple = true;
+
     game.physics.startSystem(Phaser.Physics.P2JS);
     game.physics.p2.setImpactEvents(true);
 
@@ -78,13 +92,8 @@ function create() {
     text.setAll('body.static', true);
     text.setAll('body.fixedRotation', true);
     text.forEach(function(pt){
-        var pos = pt.z-1;
         pt.body.setCollisionGroup(textGroup);
         pt.body.collides([playerGroup, bulletGroup]);
-        if(level[pos] > 0){
-            pt.reset(p2x(pos)*WIDTH+WIDTH/2+OFFSETX, p2y(pos)*WIDTH+WIDTH/2+OFFSETY);
-            pt.frame = level[pos];
-        }
     });
 
     player = game.add.sprite(400, 500, 'termfont', 383);
@@ -94,18 +103,6 @@ function create() {
     player.body.fixedRotation = true;
     player.body.setCollisionGroup(playerGroup);
     player.body.collides(textGroup);
-
-    // walls = game.add.group();
-    // walls.enableBody = true;
-    // walls.physicsBodyType = Phaser.Physics.ARCADE;
-    // walls.createMultiple(30, 'colorCircle16', 5);
-    // walls.setAll('anchor.x', 0.5);
-    // walls.setAll('anchor.y', 0.5);
-    // walls.setAll('body.immovable', true);
-    // walls.forEach(function(wall){
-    //     var pos = wall.z;
-    //     wall.reset(pos*16, pos*16);
-    // });
 
     bullets = game.add.group();
     bullets.createMultiple(20, 'termfont', 254);
@@ -120,7 +117,26 @@ function create() {
 
     controls = game.input.keyboard.createCursorKeys();
     fire = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+
+    loadLevel(levelNumber);
     
+}
+
+function loadLevel(levelNum){
+    levelNumber = levelNum%levelCount;
+    if(levelNumber < 0){
+        levelNumber+=levelCount;
+    }
+    level = levelData.data[levelNumber];
+    text.forEach(function(pt){
+        var pos = pt.z-1;
+        if(level[pos] > 0){
+            pt.reset(p2x(pos)*WIDTH+WIDTH/2+OFFSETX, p2y(pos)*WIDTH+WIDTH/2+OFFSETY);
+            pt.frame = level[pos];
+        }else{
+            pt.kill();
+        }
+    });
 }
 
 function update() {
@@ -154,18 +170,22 @@ function update() {
         // game.physics.arcade.overlap(bullets, enemies, bulletHit);
         // game.physics.arcade.overlap(bullets, text, bulletHitText);
 
-        // if(player.body.x > SCREEN_WIDTH){
-        //     player.body.x = 0;
-        // }
-        // if(player.body.x < 0){
-        //     player.body.x = SCREEN_WIDTH;
-        // }
-        // if(player.body.y > SCREEN_HEIGHT){
-        //     player.body.y = 0;
-        // }
-        // if(player.body.y < 0){
-        //     player.body.y = SCREEN_HEIGHT;
-        // }
+        if(player.body.x > SCREEN_WIDTH){
+            player.body.x = 0;
+            loadLevel(levelNumber+1);
+        }
+        if(player.body.x < 0){
+            player.body.x = SCREEN_WIDTH;
+            loadLevel(levelNumber-1);
+        }
+        if(player.body.y > SCREEN_HEIGHT){
+            player.body.y = 0;
+            loadLevel(levelNumber+levelCols);
+        }
+        if(player.body.y < 0){
+            player.body.y = SCREEN_HEIGHT;
+            loadLevel(levelNumber-levelCols);
+        }
 
 
         bullets.forEachAlive(function(bullet){
@@ -190,7 +210,7 @@ function bulletHitText(bullet, text) {
     // var wallType = wall.frame;
     // console.log('hit', wallType);
     text.sprite.kill();
-
+    sfxExplosion.play();
 }
 
 function playerFire(){
@@ -204,7 +224,7 @@ function playerFire(){
             bullet.body.fixedRotation = true;
             bullet.reclaim = game.time.now + 5000;
             bulletDelay = game.time.now + BULLET_DELAY;
-            // bullet.body.setSize(8,8,0,0);
+            sfxFire.play();
         }
     }
 }
