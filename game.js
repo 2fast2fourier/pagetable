@@ -2,7 +2,12 @@
 var game;
 
 function loadInit(){
-    game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update, render: render });
+    game = new Phaser.Game(800, 600, Phaser.AUTO, 'phaser-example', {
+        preload: preload,
+        create: create,
+        update: update,
+        render: render
+    });
 }
 
 var destroyableWalls = [461,442];
@@ -32,7 +37,7 @@ var SCREEN_WIDTH = 800;
 var SCREEN_HEIGHT = 600;
 var WIDTH = 16;
 var SCREENX = 48;
-var OFFSETX = 16, OFFSETY = 12;
+var OFFSETX = 24, OFFSETY = 16;
 
 var AI_CONSTANTS = {
     brawler: {
@@ -55,6 +60,18 @@ var AI_CONSTANTS = {
         bulletDelay: 500,
         bulletReclaim: 500,
         bulletDamage: 1,
+        damage: 1,
+        health: 5,
+        anim: {}
+    },
+    sniper: {
+        sightRadius: 300,
+        moveSpeedAttack: 0,
+        moveSpeedNormal: 0,
+        bulletSpeed: 300,
+        bulletDelay: 500,
+        bulletReclaim: 1000,
+        bulletDamage: 2,
         damage: 1,
         health: 5,
         anim: {}
@@ -94,8 +111,20 @@ var sfxFire, sfxExplosion, sfxEnemyDie;
 var bullets, enemyBullets, healthHUD;
 
 function create() {
+    var playerSpawn = 200;
     levelData = game.cache.getJSON('leveldata');
     levelCount = levelData.data.length;
+
+    for(var ix=0;ix<levelCount;ix++){
+        var lvl = levelData.data[ix];
+        for(var iy=0;iy<lvl.length;iy++){
+            if(lvl[iy] === 383){
+                levelNumber = ix;
+                playerSpawn = iy;
+            }
+        }
+    }
+
     level = levelData.data[levelNumber];
 
     sfxFire = game.add.audio('sfxFire');
@@ -132,7 +161,9 @@ function create() {
         pt.body.collides([playerGroup, bulletGroup, textGroup, enemyGroup, enemyBulletGroup]);
     });
 
-    player = game.add.sprite(400, 500, 'termfont', 383);
+
+
+    player = game.add.sprite(p2x(playerSpawn)*WIDTH+OFFSETX, p2y(playerSpawn)*WIDTH+OFFSETY, 'termfont', 383);
     player.anchor.setTo(0.5, 0.5);
     player.maxHealth = 10;
     player.health = player.maxHealth;
@@ -221,7 +252,9 @@ function loadLevel(levelNum){
         var pos = pt.z-1;
         var type = level[pos];
         var enemy;
-        if(type === 1 || type === 2 || type === 15){
+        if(type === 383){
+            //skip, used elsewhere
+        }else if(type === 1 || type === 2 || type === 15 || type === 277){
             enemy = enemies.getFirstExists(false);
             if(enemy){
                 if(type === 1){
@@ -229,19 +262,25 @@ function loadLevel(levelNum){
                         type: 'brawler',
                         constants: AI_CONSTANTS.brawler
                     };
-                }else if(type === 15){
+                }else if(type === 277){
                     enemy.ai = {
                         type: 'shooter',
                         bulletDelay: 0,
                         constants: AI_CONSTANTS.shooter
                     };
+                }else if(type === 15){
+                    enemy.ai = {
+                        type: 'sniper',
+                        bulletDelay: 0,
+                        constants: AI_CONSTANTS.sniper
+                    };
                 }
-                enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, enemy.ai.constants.health);
+                enemy.reset(p2x(pos)*WIDTH+OFFSETX, p2y(pos)*WIDTH+OFFSETY, enemy.ai.constants.health);
                 enemy.frame = type;
                 playAnimation(enemy, enemy.ai.constants.anim.idle);
             }
         }else if(type > 0){
-            pt.reset(p2x(pos)*WIDTH+WIDTH/2+OFFSETX, p2y(pos)*WIDTH+WIDTH/2+OFFSETY);
+            pt.reset(p2x(pos)*WIDTH+OFFSETX, p2y(pos)*WIDTH+OFFSETY);
             pt.frame = level[pos];
         }
     });
@@ -382,6 +421,7 @@ function bulletHitPlayer(bullet, player) {
         player.sprite.damage(damage);
         sfxEnemyDie.play();
     }
+    updateHealthHUD();
 }
 
 function playerFire(){
@@ -410,7 +450,7 @@ function enemyFire(enemy, angle){
         bullet.firedBy = enemy;
         bullet.body.velocity.x = Math.cos(angle)*enemy.ai.constants.bulletSpeed;
         bullet.body.velocity.y = Math.sin(angle)*enemy.ai.constants.bulletSpeed;
-        bullet.reclaim = game.time.now + 500;
+        bullet.reclaim = game.time.now + enemy.ai.constants.bulletReclaim;
         enemy.ai.bulletDelay = game.time.now + enemy.ai.constants.bulletDelay;
         sfxFire.play();
     }
