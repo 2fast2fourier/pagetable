@@ -37,6 +37,18 @@ var OFFSETX = 16, OFFSETY = 12;
 var BULLET_VELOCITY = 300;
 var BULLET_DELAY = 200;
 
+var AI_CONSTANTS = {
+    brawler: {
+        sightRadius: 200,
+        moveSpeedAttack: 250,
+        moveSpeedNormal: 150,
+        damage: 1
+    }
+};
+var PLAYER_CONSTANTS = {
+    moveSpeed: 300
+};
+
 function p2x(pos){
     return pos%SCREENX;
 }
@@ -126,13 +138,17 @@ function create() {
         enemy.body.setCollisionGroup(enemyGroup);
         enemy.body.collides([bulletGroup, textGroup]);
         enemy.body.collides(playerGroup, enemyHitPlayer);
-        enemy.animations.add('strobe', [1,2], 5);
-        enemy.animations.add('flash', [1,2], 15);
+        enemy.animations.add('strobe', [1,2], 2, true);
+        enemy.animations.add('attack', [1,2], 8, true);
+        enemy.animations.add('flash', [1,2], 16, true);
     });
 
     var en1 = enemies.getFirstExists(false);
     en1.reset(300, 300, 3);
-    en1.animations.play('strobe', 5, true);
+    en1.animations.play('strobe');
+    en1.ai = {
+        type: 'brawler'
+    };
 
 
     bullets = game.add.group();
@@ -199,19 +215,19 @@ function update() {
         player.body.setZeroVelocity();
 
         if (controls.left.isDown){
-            player.body.moveLeft(200);
+            player.body.moveLeft(PLAYER_CONSTANTS.moveSpeed);
             player.rotation = 1.5*Math.PI;
         }
         if (controls.right.isDown){
-            player.body.moveRight(200);
+            player.body.moveRight(PLAYER_CONSTANTS.moveSpeed);
             player.rotation = Math.PI/2;
         }
         if (controls.up.isDown){
-            player.body.moveUp(200);
+            player.body.moveUp(PLAYER_CONSTANTS.moveSpeed);
             player.rotation = 0;
         }
         if (controls.down.isDown){
-            player.body.moveDown(200);
+            player.body.moveDown(PLAYER_CONSTANTS.moveSpeed);
             player.rotation = Math.PI;
         }
         if (fire.isDown){
@@ -241,6 +257,33 @@ function update() {
                 bullet.kill();
             }
         });
+
+        enemies.forEachAlive(function(enemy){
+            
+            if(enemy.ai.type === 'brawler'){
+                if(enemy.ai.stunned > game.time.now){
+                    enemy.ai.attacking = false;
+                    //sit and wait
+                }else if(Phaser.Point.distance(enemy, player) < AI_CONSTANTS.brawler.sightRadius){
+                    if(!enemy.ai.attacking){
+                        enemy.ai.attacking = true;
+                        enemy.animations.play('attack');
+                    }
+                    var rot = Phaser.Point.angle(player, enemy);
+                    enemy.body.velocity.x = Math.cos(rot)*AI_CONSTANTS.brawler.moveSpeedAttack;
+                    enemy.body.velocity.y = Math.sin(rot)*AI_CONSTANTS.brawler.moveSpeedAttack;
+                }else{
+                    if(enemy.ai.attacking){
+                        enemy.animations.play('strobe');
+                        enemy.ai.attacking = false;
+                    }
+                    if(enemy.ai.stunned > 0 && enemy.ai.stunned < game.time.now){
+                        enemy.stunned = 0;
+                        enemy.animations.play('strobe');
+                    }
+                }
+            }
+        });
     }
 
 }
@@ -262,8 +305,10 @@ function bulletHitText(bullet, text) {
 }
 
 function enemyHitPlayer(enemy, player) {
-    enemy.sprite.animations.play('flash', 15, true);
+    enemy.sprite.animations.play('flash');
     enemy.sprite.damage(1);
+    enemy.sprite.ai.stunned = game.time.now+2000;
+    enemy.sprite.ai.attacking = false;
 
     // var wallType = wall.frame;
     // console.log('hit', wallType);
