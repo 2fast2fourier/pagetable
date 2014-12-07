@@ -84,6 +84,12 @@ var PLAYER_CONSTANTS = {
     bulletDelay: 200,
     damage: 2
 };
+var aiTypes = {
+    1: AI_CONSTANTS.brawler,
+    2: AI_CONSTANTS.brawler,
+    15: AI_CONSTANTS.sniper,
+    277: AI_CONSTANTS.shooter
+};
 
 function p2x(pos){
     return pos%SCREENX;
@@ -252,29 +258,16 @@ function loadLevel(levelNum){
         var pos = pt.z-1;
         var type = level[pos];
         var enemy;
+        var aiType = aiTypes[type];
         if(type === 383){
             //skip, used elsewhere
-        }else if(type === 1 || type === 2 || type === 15 || type === 277){
+        }else if(aiType){
             enemy = enemies.getFirstExists(false);
             if(enemy){
-                if(type === 1){
-                    enemy.ai = {
-                        type: 'brawler',
-                        constants: AI_CONSTANTS.brawler
-                    };
-                }else if(type === 277){
-                    enemy.ai = {
-                        type: 'shooter',
-                        bulletDelay: 0,
-                        constants: AI_CONSTANTS.shooter
-                    };
-                }else if(type === 15){
-                    enemy.ai = {
-                        type: 'sniper',
-                        bulletDelay: 0,
-                        constants: AI_CONSTANTS.sniper
-                    };
-                }
+                enemy.ai = {
+                    constants: aiType,
+                    bulletDelay: 0
+                };
                 enemy.reset(p2x(pos)*WIDTH+OFFSETX, p2y(pos)*WIDTH+OFFSETY, enemy.ai.constants.health);
                 enemy.frame = type;
                 playAnimation(enemy, enemy.ai.constants.anim.idle);
