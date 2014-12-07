@@ -34,19 +34,20 @@ var SCREEN_HEIGHT = 600;
 var WIDTH = 16;
 var SCREENX = 48;
 var OFFSETX = 16, OFFSETY = 12;
-var BULLET_VELOCITY = 300;
-var BULLET_DELAY = 200;
 
 var AI_CONSTANTS = {
     brawler: {
         sightRadius: 200,
         moveSpeedAttack: 250,
         moveSpeedNormal: 150,
-        damage: 1
+        damage: 1,
+        health: 3
     }
 };
 var PLAYER_CONSTANTS = {
-    moveSpeed: 300
+    moveSpeed: 300,
+    bulletSpeed: 500,
+    bulletDelay: 200
 };
 
 function p2x(pos){
@@ -143,13 +144,6 @@ function create() {
         enemy.animations.add('flash', [1,2], 16, true);
     });
 
-    var en1 = enemies.getFirstExists(false);
-    en1.reset(300, 300, 3);
-    en1.animations.play('strobe');
-    en1.ai = {
-        type: 'brawler'
-    };
-
 
     bullets = game.add.group();
     bullets.createMultiple(20, 'termfont', 254);
@@ -198,13 +192,25 @@ function loadLevel(levelNum){
         levelNumber+=levelCount;
     }
     level = levelData.data[levelNumber];
+    enemies.callAllExists('kill', true);
+    text.callAllExists('kill', true);
+    bullets.callAllExists('kill', true);
+    enemyBullets.callAllExists('kill', true);
     text.forEach(function(pt){
         var pos = pt.z-1;
-        if(level[pos] > 0){
+        var type = level[pos];
+        if(type === 1 || type === 2){
+            var enemy = enemies.getFirstExists(false);
+            if(enemy){
+                enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, AI_CONSTANTS.brawler.health);
+                enemy.animations.play('strobe');
+                enemy.ai = {
+                    type: 'brawler'
+                };
+            }
+        }else if(type > 0){
             pt.reset(p2x(pos)*WIDTH+WIDTH/2+OFFSETX, p2y(pos)*WIDTH+WIDTH/2+OFFSETY);
             pt.frame = level[pos];
-        }else{
-            pt.kill();
         }
     });
 }
@@ -333,10 +339,10 @@ function playerFire(){
             bullet.reset(player.x, player.y);
             bullet.body.fixedRotation = false;
             bullet.body.rotation = player.rotation;
-            bullet.body.moveForward(BULLET_VELOCITY);
+            bullet.body.moveForward(PLAYER_CONSTANTS.bulletSpeed);
             bullet.body.fixedRotation = true;
-            bullet.reclaim = game.time.now + 5000;
-            bulletDelay = game.time.now + BULLET_DELAY;
+            bullet.reclaim = game.time.now + 500;
+            bulletDelay = game.time.now + PLAYER_CONSTANTS.bulletDelay;
             sfxFire.play();
         }
     }
