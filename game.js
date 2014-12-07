@@ -40,14 +40,33 @@ var AI_CONSTANTS = {
         sightRadius: 200,
         moveSpeedAttack: 250,
         moveSpeedNormal: 150,
+        damage: 2,
+        health: 3,
+        anim: {
+            hit: 'hit',
+            attack: 'attack',
+            idle: 'idle'
+        }
+    },
+    shooter: {
+        sightRadius: 250,
+        moveSpeedAttack: 150,
+        moveSpeedNormal: 100,
+        bulletSpeed: 300,
+        bulletDelay: 500,
+        bulletReclaim: 500,
+        bulletDamage: 1,
         damage: 1,
-        health: 3
+        health: 2,
+        anim: {}
     }
 };
 var PLAYER_CONSTANTS = {
+    bulletDamage: 1,
     moveSpeed: 300,
     bulletSpeed: 500,
-    bulletDelay: 200
+    bulletDelay: 200,
+    damage: 2
 };
 
 function p2x(pos){
@@ -122,7 +141,10 @@ function create() {
     player.body.setCircle(8);
     player.body.fixedRotation = true;
     player.body.setCollisionGroup(playerGroup);
-    player.body.collides([textGroup, enemyGroup]);
+    player.body.collides([textGroup, enemyGroup, enemyBulletGroup]);
+    player.ai = {
+        constants: PLAYER_CONSTANTS
+    };
 
     healthHUD = game.add.group();
     healthHUD.createMultiple(player.maxHealth, 'colorCircle16', 3);
@@ -139,9 +161,9 @@ function create() {
         enemy.body.setCollisionGroup(enemyGroup);
         enemy.body.collides([bulletGroup, textGroup]);
         enemy.body.collides(playerGroup, enemyHitPlayer);
-        enemy.animations.add('strobe', [1,2], 2, true);
+        enemy.animations.add('idle', [1,2], 2, true);
         enemy.animations.add('attack', [1,2], 8, true);
-        enemy.animations.add('flash', [1,2], 16, true);
+        enemy.animations.add('hit', [1,2], 16, true);
     });
 
 
@@ -164,9 +186,9 @@ function create() {
     enemyBullets.setAll('checkWorldBounds', true);
     enemyBullets.forEach(function(bullet){
         bullet.body.setCircle(4);
-        bullet.body.setCollisionGroup(bulletGroup);
+        bullet.body.setCollisionGroup(enemyBulletGroup);
         bullet.body.collides(textGroup, bulletHitText);
-        bullet.body.collides(enemyGroup, bulletHitEnemy);
+        bullet.body.collides(playerGroup, bulletHitPlayer);
     });
 
     controls = game.input.keyboard.createCursorKeys();
@@ -199,13 +221,25 @@ function loadLevel(levelNum){
     text.forEach(function(pt){
         var pos = pt.z-1;
         var type = level[pos];
+        var enemy;
         if(type === 1 || type === 2){
-            var enemy = enemies.getFirstExists(false);
+            enemy = enemies.getFirstExists(false);
             if(enemy){
                 enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, AI_CONSTANTS.brawler.health);
                 enemy.animations.play('strobe');
                 enemy.ai = {
-                    type: 'brawler'
+                    type: 'brawler',
+                    constants: AI_CONSTANTS.brawler
+                };
+            }
+        }else if(type === 15){
+            enemy = enemies.getFirstExists(false);
+            if(enemy){
+                enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, AI_CONSTANTS.shooter.health);
+                enemy.ai = {
+                    type: 'shooter',
+                    bulletDelay: 0,
+                    constants: AI_CONSTANTS.shooter
                 };
             }
         }else if(type > 0){
@@ -264,34 +298,40 @@ function update() {
             }
         });
 
+        enemyBullets.forEachAlive(function(bullet){
+            if(bullet.reclaim < game.time.now){
+                bullet.kill();
+            }
+        });
+
         enemies.forEachAlive(function(enemy){
-            
-            if(enemy.ai.type === 'brawler'){
-                if(enemy.ai.stunned > game.time.now){
-                    enemy.ai.attacking = false;
-                    //sit and wait
-                }else if(Phaser.Point.distance(enemy, player) < AI_CONSTANTS.brawler.sightRadius){
-                    if(!enemy.ai.attacking){
-                        enemy.ai.attacking = true;
-                        enemy.animations.play('attack');
-                    }
-                    var rot = Phaser.Point.angle(player, enemy);
-                    enemy.body.velocity.x = Math.cos(rot)*AI_CONSTANTS.brawler.moveSpeedAttack;
-                    enemy.body.velocity.y = Math.sin(rot)*AI_CONSTANTS.brawler.moveSpeedAttack;
-                }else{
-                    if(enemy.ai.attacking){
-                        enemy.animations.play('strobe');
-                        enemy.ai.attacking = false;
-                    }
-                    if(enemy.ai.stunned > 0 && enemy.ai.stunned < game.time.now){
-                        enemy.stunned = 0;
-                        enemy.animations.play('strobe');
-                    }
+            if(enemy.ai.stunned > game.time.now){
+                playAnimation(enemy, enemy.ai.constants.anim.hit);
+                enemy.body.damping = 0.8;
+                //sit and wait
+            }else if(Phaser.Point.distance(enemy, player) < enemy.ai.constants.sightRadius){
+                playAnimation(enemy, enemy.ai.constants.anim.attack);
+                var rot = Phaser.Point.angle(player, enemy);
+                enemy.body.damping = 0;
+                enemy.body.velocity.x = Math.cos(rot)*enemy.ai.constants.moveSpeedAttack;
+                enemy.body.velocity.y = Math.sin(rot)*enemy.ai.constants.moveSpeedAttack;
+                if(enemy.ai.constants.bulletSpeed > 0 && game.time.now > enemy.ai.bulletDelay){
+                    enemyFire(enemy, rot);
                 }
+            }else{
+                playAnimation(enemy, enemy.ai.constants.anim.idle);
+                enemy.body.damping = 0.9;
             }
         });
     }
 
+}
+
+function playAnimation(sprite, anim){
+    if(anim && sprite.ai.currentAnim !== anim){
+        sprite.animations.play(anim);
+        sprite.ai.currentAnim = anim;
+    }
 }
 
 function render() {
@@ -311,33 +351,48 @@ function bulletHitText(bullet, text) {
 }
 
 function enemyHitPlayer(enemy, player) {
-    enemy.sprite.animations.play('flash');
-    enemy.sprite.damage(1);
-    enemy.sprite.ai.stunned = game.time.now+2000;
-    enemy.sprite.ai.attacking = false;
-
-    // var wallType = wall.frame;
-    // console.log('hit', wallType);
-    player.sprite.damage(1);
+    var playerDamage = player.sprite.ai.constants.damage;
+    if(playerDamage > 0){
+        playAnimation(enemy.sprite, enemy.sprite.ai.constants.anim.hit);
+        enemy.sprite.damage(playerDamage);
+        enemy.sprite.ai.stunned = game.time.now+2000;
+    }
+    var enemyDamage = enemy.sprite.ai.constants.damage;
+    if(enemyDamage > 0){
+        // playAnimation(player.sprite, player.sprite.ai.constants.anim.hit);
+        player.sprite.damage(enemyDamage);
+        sfxExplosion.play();
+    }
     updateHealthHUD();
-    sfxExplosion.play();
 }
 
 function bulletHitEnemy(bullet, enemy) {
+    var damage = bullet.sprite.firedBy.ai.constants.bulletDamage;
     bullet.sprite.kill();
-    // var wallType = wall.frame;
-    // console.log('hit', wallType);
-    enemy.sprite.animations.play('flash', 15, true);
-    enemy.sprite.damage(5);
-    sfxEnemyDie.play();
+    if(damage > 0){
+        playAnimation(enemy.sprite, enemy.sprite.ai.constants.anim.hit);
+        enemy.sprite.damage(damage);
+        sfxEnemyDie.play();
+    }
+}
+
+function bulletHitPlayer(bullet, player) {
+    bullet.sprite.kill();
+    // player.sprite.animations.play('damaged');
+    var damage = bullet.sprite.firedBy.ai.constants.bulletDamage;
+    if(damage > 0){
+        player.sprite.damage(damage);
+        sfxEnemyDie.play();
+    }
 }
 
 function playerFire(){
     if (game.time.now > bulletDelay){
-        bullet = bullets.getFirstExists(false);
+        var bullet = bullets.getFirstExists(false);
         if (bullet){
             bullet.reset(player.x, player.y);
             bullet.body.fixedRotation = false;
+            bullet.firedBy = player;
             bullet.body.rotation = player.rotation;
             bullet.body.moveForward(PLAYER_CONSTANTS.bulletSpeed);
             bullet.body.fixedRotation = true;
@@ -345,6 +400,21 @@ function playerFire(){
             bulletDelay = game.time.now + PLAYER_CONSTANTS.bulletDelay;
             sfxFire.play();
         }
+    }
+}
+
+function enemyFire(enemy, angle){
+    var bullet = enemyBullets.getFirstExists(false);
+    if (bullet){
+        bullet.reset(enemy.body.x, enemy.body.y);
+        bullet.body.setZeroVelocity();
+        bullet.body.setZeroRotation();
+        bullet.firedBy = enemy;
+        bullet.body.velocity.x = Math.cos(angle)*enemy.ai.constants.bulletSpeed;
+        bullet.body.velocity.y = Math.sin(angle)*enemy.ai.constants.bulletSpeed;
+        bullet.reclaim = game.time.now + 500;
+        enemy.ai.bulletDelay = game.time.now + enemy.ai.constants.bulletDelay;
+        sfxFire.play();
     }
 }
 
