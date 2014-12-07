@@ -22,8 +22,9 @@ function preload() {
 
     game.load.json('leveldata', 'leveldata.json');
 
-    game.load.audio('sfxfire', 'fire.wav');
-    game.load.audio('sfxexplosion', 'explosion.wav');
+    game.load.audio('sfxFire', 'fire.wav');
+    game.load.audio('sfxExplosion', 'explosion.wav');
+    game.load.audio('sfxEnemyDie', 'enemydie.wav');
 
 
 }
@@ -57,18 +58,21 @@ var controls;
 var fire;
 var bulletDelay = 0;
 var paused = false;
-var bulletGroup, textGroup, playerGroup;
-var sfxFire, sfxExplosion;
+var bulletGroup, textGroup, playerGroup, enemyGroup, enemyBulletGroup;
+var sfxFire, sfxExplosion, sfxEnemyDie;
+var bullets, enemyBullets, healthHUD;
 
 function create() {
     levelData = game.cache.getJSON('leveldata');
     levelCount = levelData.data.length;
     level = levelData.data[levelNumber];
 
-    sfxFire = game.add.audio('sfxfire');
-    sfxExplosion = game.add.audio('sfxexplosion');
+    sfxFire = game.add.audio('sfxFire');
+    sfxExplosion = game.add.audio('sfxExplosion');
+    sfxEnemyDie = game.add.audio('sfxEnemyDie');
     sfxFire.allowMultiple = true;
     sfxExplosion.allowMultiple = true;
+    sfxEnemyDie.allowMultiple = true;
 
     game.physics.startSystem(Phaser.Physics.P2JS);
     game.physics.p2.setImpactEvents(true);
@@ -76,6 +80,8 @@ function create() {
     bulletGroup = game.physics.p2.createCollisionGroup();
     playerGroup = game.physics.p2.createCollisionGroup();
     textGroup = game.physics.p2.createCollisionGroup();
+    enemyGroup = game.physics.p2.createCollisionGroup();
+    enemyBulletGroup = game.physics.p2.createCollisionGroup();
     // game.physics.p2.updateBoundsCollisionGroup();
 
     background = game.add.tileSprite(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 'white32');
@@ -84,7 +90,6 @@ function create() {
     game.add.tileSprite(0, SCREEN_HEIGHT-5, SCREEN_WIDTH, 5, 'borderBottom');
     game.add.tileSprite(0, 0, 5, SCREEN_HEIGHT, 'borderLeft');
     game.add.tileSprite(SCREEN_WIDTH-5, 0, 5, SCREEN_HEIGHT, 'borderRight');
-    var x;
 
     text = game.add.group();
     text.createMultiple(level.length, 'termfont');
@@ -93,16 +98,42 @@ function create() {
     text.setAll('body.fixedRotation', true);
     text.forEach(function(pt){
         pt.body.setCollisionGroup(textGroup);
-        pt.body.collides([playerGroup, bulletGroup]);
+        pt.body.collides([playerGroup, bulletGroup, textGroup, enemyGroup, enemyBulletGroup]);
     });
 
     player = game.add.sprite(400, 500, 'termfont', 383);
     player.anchor.setTo(0.5, 0.5);
+    player.maxHealth = 10;
+    player.health = player.maxHealth;
     game.physics.p2.enable(player);
     player.body.setCircle(8);
     player.body.fixedRotation = true;
     player.body.setCollisionGroup(playerGroup);
-    player.body.collides(textGroup);
+    player.body.collides([textGroup, enemyGroup]);
+
+    healthHUD = game.add.group();
+    healthHUD.createMultiple(player.maxHealth, 'colorCircle16', 3);
+    healthHUD.forEach(function(heart){
+        heart.anchor.setTo(0.5, 0.5);
+    });
+    updateHealthHUD();
+
+    enemies = game.add.group();
+    enemies.createMultiple(20, 'termfont', 1);
+    game.physics.p2.enable(enemies);
+    enemies.setAll('body.fixedRotation', true);
+    enemies.forEach(function(enemy){
+        enemy.body.setCollisionGroup(enemyGroup);
+        enemy.body.collides([bulletGroup, textGroup]);
+        enemy.body.collides(playerGroup, enemyHitPlayer);
+        enemy.animations.add('strobe', [1,2], 5);
+        enemy.animations.add('flash', [1,2], 15);
+    });
+
+    var en1 = enemies.getFirstExists(false);
+    en1.reset(300, 300, 3);
+    en1.animations.play('strobe', 5, true);
+
 
     bullets = game.add.group();
     bullets.createMultiple(20, 'termfont', 254);
@@ -113,6 +144,19 @@ function create() {
         bullet.body.setCircle(4);
         bullet.body.setCollisionGroup(bulletGroup);
         bullet.body.collides(textGroup, bulletHitText);
+        bullet.body.collides(enemyGroup, bulletHitEnemy);
+    });
+
+    enemyBullets = game.add.group();
+    enemyBullets.createMultiple(20, 'termfont', 256);
+    game.physics.p2.enable(enemyBullets, true);
+    enemyBullets.setAll('outOfBoundsKill', true);
+    enemyBullets.setAll('checkWorldBounds', true);
+    enemyBullets.forEach(function(bullet){
+        bullet.body.setCircle(4);
+        bullet.body.setCollisionGroup(bulletGroup);
+        bullet.body.collides(textGroup, bulletHitText);
+        bullet.body.collides(enemyGroup, bulletHitEnemy);
     });
 
     controls = game.input.keyboard.createCursorKeys();
@@ -120,6 +164,16 @@ function create() {
 
     loadLevel(levelNumber);
     
+}
+
+function updateHealthHUD(){
+    healthHUD.forEach(function(heart){
+        if(heart.z <= player.health){
+            heart.reset(10+heart.z*18, SCREEN_HEIGHT-10, 1);
+        }else{
+            heart.kill();
+        }
+    });
 }
 
 function loadLevel(levelNum){
@@ -164,12 +218,6 @@ function update() {
             playerFire();
         }
 
-        // game.physics.arcade.collide(text, player, collisionHandler);
-        // game.physics.arcade.collide(walls, player, collisionHandler);
-
-        // game.physics.arcade.overlap(bullets, enemies, bulletHit);
-        // game.physics.arcade.overlap(bullets, text, bulletHitText);
-
         if(player.body.x > SCREEN_WIDTH){
             player.body.x = 0;
             loadLevel(levelNumber+1);
@@ -211,6 +259,26 @@ function bulletHitText(bullet, text) {
     // console.log('hit', wallType);
     text.sprite.kill();
     sfxExplosion.play();
+}
+
+function enemyHitPlayer(enemy, player) {
+    enemy.sprite.animations.play('flash', 15, true);
+    enemy.sprite.damage(1);
+
+    // var wallType = wall.frame;
+    // console.log('hit', wallType);
+    player.sprite.damage(1);
+    updateHealthHUD();
+    sfxExplosion.play();
+}
+
+function bulletHitEnemy(bullet, enemy) {
+    bullet.sprite.kill();
+    // var wallType = wall.frame;
+    // console.log('hit', wallType);
+    enemy.sprite.animations.play('flash', 15, true);
+    enemy.sprite.damage(5);
+    sfxEnemyDie.play();
 }
 
 function playerFire(){

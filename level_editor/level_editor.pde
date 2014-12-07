@@ -102,6 +102,7 @@ void draw(){
   }
   
   fill(0,0,0,255);
+  text("Selected: "+s, boundX*tileSize-400, selectY-10);
   text("Levels: "+levelCount, boundX*tileSize-200, selectY);
   fill(255, 255, 255, 255);
   for(int ix=0;ix<levelCount;ix++){
