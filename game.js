@@ -11,7 +11,6 @@ var destroyableWalls = [461,442];
 
 function preload() {
 
-    game.load.image('bullet', 'assets/games/invaders/bullet.png');
     game.load.image('white32', 'white32.png');
     game.load.image('borderTop', 'bordertop.png');
     game.load.image('borderBottom', 'borderbottom.png');
