@@ -57,12 +57,12 @@ var AI_CONSTANTS = {
         bulletReclaim: 500,
         bulletDamage: 1,
         damage: 1,
-        health: 2,
+        health: 5,
         anim: {}
     }
 };
 var PLAYER_CONSTANTS = {
-    bulletDamage: 1,
+    bulletDamage: 3,
     moveSpeed: 300,
     bulletSpeed: 500,
     bulletDelay: 200,
@@ -222,25 +222,24 @@ function loadLevel(levelNum){
         var pos = pt.z-1;
         var type = level[pos];
         var enemy;
-        if(type === 1 || type === 2){
+        if(type === 1 || type === 2 || type === 15){
             enemy = enemies.getFirstExists(false);
             if(enemy){
-                enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, AI_CONSTANTS.brawler.health);
-                enemy.animations.play('strobe');
-                enemy.ai = {
-                    type: 'brawler',
-                    constants: AI_CONSTANTS.brawler
-                };
-            }
-        }else if(type === 15){
-            enemy = enemies.getFirstExists(false);
-            if(enemy){
-                enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, AI_CONSTANTS.shooter.health);
-                enemy.ai = {
-                    type: 'shooter',
-                    bulletDelay: 0,
-                    constants: AI_CONSTANTS.shooter
-                };
+                if(type === 1){
+                    enemy.ai = {
+                        type: 'brawler',
+                        constants: AI_CONSTANTS.brawler
+                    };
+                }else if(type === 15){
+                    enemy.ai = {
+                        type: 'shooter',
+                        bulletDelay: 0,
+                        constants: AI_CONSTANTS.shooter
+                    };
+                }
+                enemy.reset(p2x(pos)*WIDTH, p2y(pos)*WIDTH, enemy.ai.constants.health);
+                enemy.frame = type;
+                playAnimation(enemy, enemy.ai.constants.anim.idle);
             }
         }else if(type > 0){
             pt.reset(p2x(pos)*WIDTH+WIDTH/2+OFFSETX, p2y(pos)*WIDTH+WIDTH/2+OFFSETY);
