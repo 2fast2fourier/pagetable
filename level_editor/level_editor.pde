@@ -102,7 +102,7 @@ void draw(){
   
   if(kbMode){
     fill(255,192,0);
-    text("Keyboard Input", selectX+400, selectY-10);
+    text("Keyboard Input "+kbPos, selectX+400, selectY-10);
     fill(255, 64, 32, 64);
     rect(s2x(kbPos, boundX)*tileSize, s2y(kbPos, boundX)*tileSize, tileSize, tileSize);
     fill(255, 255, 255, 255);

@@ -349,7 +349,7 @@ function update() {
                 playAnimation(enemy, enemy.ai.constants.anim.hit);
                 enemy.body.damping = 0.8;
                 //sit and wait
-            }else if(Phaser.Point.distance(enemy, player) < enemy.ai.constants.sightRadius){
+            }else if(Phaser.Point.distance(enemy, player) < enemy.ai.constants.sightRadius && canSee(enemy, player)){
                 playAnimation(enemy, enemy.ai.constants.anim.attack);
                 var rot = Phaser.Point.angle(player, enemy);
                 enemy.body.damping = 0;
@@ -367,6 +367,27 @@ function update() {
 
 }
 
+function canSee(sprite, target){
+    var cx, cy, ct;
+    var ix;
+    var sx = sprite.body.x, sy = sprite.body.y;
+    var tx = target.body.x, ty = target.body.y;
+    var dx = tx-sx, dy = ty-sy;
+    var dt = Math.abs(dx)+Math.abs(dy);
+    var stepX = dx/dt, stepY = dy/dt, steps = Math.ceil(dt/10);
+    // console.log({sx:sx,sy:sy,tx:tx,ty:ty, dx:dx, dy:dy,stepX:stepX, stepY:stepY, steps:steps});
+    for(ix=0;ix<steps;ix++){
+        cx = sx+stepX*10*ix;
+        cy = sy+stepY*10*ix;
+        ct = Math.floor((cy-OFFSETY+1)/WIDTH)*SCREENX+Math.floor((cx-OFFSETX+1)/WIDTH);
+        if(_.contains(invulnerableWalls, level[ct])){
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function playAnimation(sprite, anim){
     if(anim && sprite.ai.currentAnim !== anim){
         sprite.animations.play(anim);
@@ -375,6 +396,7 @@ function playAnimation(sprite, anim){
 }
 
 function render() {
+    // game.debug.inputInfo(100, 100);
 
 }
 
@@ -384,8 +406,6 @@ function collisionHandler(wall, player) {
 
 function bulletHitText(bullet, text) {
     bullet.sprite.kill();
-    // var wallType = wall.frame;
-    // console.log('hit', wallType);
     if(!_.contains(invulnerableWalls, text.sprite.frame)){
         text.sprite.kill();
         sfxExplosion.play();
