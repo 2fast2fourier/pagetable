@@ -64,9 +64,16 @@ void draw(){
         fill(255, 64, 32, 64);
         rect(sx*tileSize, sy*tileSize, tileSize, tileSize);
         fill(255, 255, 255, 255);
-        if(level.getInt(tar) != s){
-          level.setInt(tar, s);
-          unsaved = true;
+        if(mouseButton == RIGHT){
+          if(level.getInt(tar) != 0){
+            level.setInt(tar, 0);
+            unsaved = true;
+          }
+        }else{
+          if(level.getInt(tar) != s){
+            level.setInt(tar, s);
+            unsaved = true;
+          }
         }
       }else{
         fill(32, 255, 32, 32);
