@@ -42,7 +42,7 @@ void loadTextMap(String file){
 }
 
 void draw(){
-  background(240);
+  background(24);
   if(mousePressed == true && mouseX >= selectX
       && mouseX < selectX+selectWidth
       && mouseY >= selectY
@@ -77,7 +77,7 @@ void draw(){
   }
   
   image(text, selectX, selectY);
-  fill(255, 64, 64, 64);
+  fill(64, 255, 32, 64);
   rect(s2x(s, selectColCount)*tileSize+selectX, s2y(s, selectColCount)*tileSize+selectY, tileSize, tileSize);
   fill(255, 255, 255, 255);
   
@@ -89,19 +89,19 @@ void draw(){
   }
   
   if(unsaved){
-    fill(0,0,0);
+    fill(255,192,0);
     text("Unsaved Changes (Press S to Save)", selectX, selectY-10);
   }
   
   if(kbMode){
-    fill(128,32,0);
+    fill(255,192,0);
     text("Keyboard Input", selectX+400, selectY-10);
     fill(255, 64, 32, 64);
     rect(s2x(kbPos, boundX)*tileSize, s2y(kbPos, boundX)*tileSize, tileSize, tileSize);
     fill(255, 255, 255, 255);
   }
   
-  fill(0,0,0,255);
+  fill(255,192,0,255);
   text("Selected: "+s, boundX*tileSize-400, selectY-10);
   text("Levels: "+levelCount, boundX*tileSize-200, selectY);
   fill(255, 255, 255, 255);

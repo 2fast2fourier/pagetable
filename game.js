@@ -17,6 +17,7 @@ var destroyableWalls = [461,442];
 function preload() {
 
     game.load.image('white32', 'white32.png');
+    game.load.image('black32', 'black32.png');
     game.load.image('borderTop', 'bordertop.png');
     game.load.image('borderBottom', 'borderbottom.png');
     game.load.image('borderLeft', 'bordertop.png');
@@ -150,7 +151,7 @@ function create() {
     enemyBulletGroup = game.physics.p2.createCollisionGroup();
     // game.physics.p2.updateBoundsCollisionGroup();
 
-    background = game.add.tileSprite(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 'white32');
+    background = game.add.tileSprite(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 'black32');
 
     game.add.tileSprite(0, 0, SCREEN_WIDTH, 5, 'borderTop');
     game.add.tileSprite(0, SCREEN_HEIGHT-5, SCREEN_WIDTH, 5, 'borderBottom');
@@ -183,9 +184,18 @@ function create() {
     };
 
     healthHUD = game.add.group();
-    healthHUD.createMultiple(player.maxHealth, 'colorCircle16', 3);
+    healthHUD.createMultiple(player.maxHealth, 'termfont', 278);
+    game.physics.p2.enable(healthHUD);
+    healthHUD.setAll('body.static', true);
+    healthHUD.setAll('body.fixedRotation', true);
     healthHUD.forEach(function(heart){
         heart.anchor.setTo(0.5, 0.5);
+        heart.body.setCollisionGroup(textGroup);
+        heart.body.collides([bulletGroup, enemyBulletGroup]);
+        heart.events.onKilled.add(function(){
+            player.damage(1);
+            updateHealthHUD();
+        });
     });
     updateHealthHUD();
 
@@ -237,9 +247,9 @@ function create() {
 function updateHealthHUD(){
     healthHUD.forEach(function(heart){
         if(heart.z <= player.health){
-            heart.reset(10+heart.z*18, SCREEN_HEIGHT-10, 1);
+            heart.reset(20+heart.z*17, SCREEN_HEIGHT-18, 1);
         }else{
-            heart.kill();
+            heart.exists = false;
         }
     });
 }
