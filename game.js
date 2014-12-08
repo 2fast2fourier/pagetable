@@ -10,7 +10,7 @@ function loadInit(){
     });
 }
 
-var destroyableWalls = [461,442];
+var invulnerableWalls = [219, 220, 221, 222, 223, 475, 476, 477, 478, 479];
 
 
 
@@ -386,8 +386,10 @@ function bulletHitText(bullet, text) {
     bullet.sprite.kill();
     // var wallType = wall.frame;
     // console.log('hit', wallType);
-    text.sprite.kill();
-    sfxExplosion.play();
+    if(!_.contains(invulnerableWalls, text.sprite.frame)){
+        text.sprite.kill();
+        sfxExplosion.play();
+    }
 }
 
 function enemyHitPlayer(enemy, player) {
