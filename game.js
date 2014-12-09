@@ -10,7 +10,7 @@ function loadInit(){
     });
 }
 
-var invulnerableWalls = [219, 220, 221, 222, 223, 475, 476, 477, 478, 479];
+var invulnerableWalls = [219, 220, 221, 222, 223, 475, 476, 477, 478, 479, 178, 434, 433, 177];
 
 
 
@@ -83,7 +83,8 @@ var PLAYER_CONSTANTS = {
     moveSpeed: 300,
     bulletSpeed: 500,
     bulletDelay: 200,
-    damage: 2
+    damage: 2,
+    invulnTime: 1000
 };
 var aiTypes = {
     1: AI_CONSTANTS.brawler,
@@ -148,6 +149,7 @@ function create() {
     playerGroup = game.physics.p2.createCollisionGroup();
     textGroup = game.physics.p2.createCollisionGroup();
     enemyGroup = game.physics.p2.createCollisionGroup();
+    heartGroup = game.physics.p2.createCollisionGroup();
     enemyBulletGroup = game.physics.p2.createCollisionGroup();
     // game.physics.p2.updateBoundsCollisionGroup();
 
@@ -178,10 +180,12 @@ function create() {
     player.body.setCircle(8);
     player.body.fixedRotation = true;
     player.body.setCollisionGroup(playerGroup);
-    player.body.collides([textGroup, enemyGroup, enemyBulletGroup]);
+    player.body.collides([textGroup, enemyGroup, enemyBulletGroup, heartGroup]);
+    player.animations.add('hit', [0,383,0,383,0,383,0,383,0,383,0,383,0,383,0,383], 16);
     player.ai = {
         constants: PLAYER_CONSTANTS
     };
+    player.invuln = game.time.now;
 
     healthHUD = game.add.group();
     healthHUD.createMultiple(player.maxHealth, 'termfont', 278);
@@ -200,7 +204,7 @@ function create() {
     updateHealthHUD();
 
     enemies = game.add.group();
-    enemies.createMultiple(20, 'termfont', 1);
+    enemies.createMultiple(40, 'termfont', 1);
     game.physics.p2.enable(enemies);
     enemies.setAll('body.fixedRotation', true);
     enemies.forEach(function(enemy){
@@ -212,6 +216,18 @@ function create() {
         enemy.animations.add('hit', [1,2], 16, true);
     });
 
+    health = game.add.group();
+    health.createMultiple(20, 'termfont', 43);
+    game.physics.p2.enable(health);
+    health.setAll('body.static', true);
+    health.setAll('body.fixedRotation', true);
+    health.forEach(function(heart){
+        heart.body.setCollisionGroup(heartGroup);
+        heart.body.collides([bulletGroup, textGroup, enemyBulletGroup]);
+        heart.body.collides(playerGroup, playerHitHeart);
+        heart.animations.add('idle', [43,299], 2, true);
+    });
+
 
     bullets = game.add.group();
     bullets.createMultiple(20, 'termfont', 254);
@@ -221,7 +237,7 @@ function create() {
     bullets.forEach(function(bullet){
         bullet.body.setCircle(4);
         bullet.body.setCollisionGroup(bulletGroup);
-        bullet.body.collides(textGroup, bulletHitText);
+        bullet.body.collides([textGroup, heartGroup], bulletHitText);
         bullet.body.collides(enemyGroup, bulletHitEnemy);
     });
 
@@ -233,7 +249,7 @@ function create() {
     enemyBullets.forEach(function(bullet){
         bullet.body.setCircle(4);
         bullet.body.setCollisionGroup(enemyBulletGroup);
-        bullet.body.collides(textGroup, bulletHitText);
+        bullet.body.collides([textGroup, heartGroup], bulletHitText);
         bullet.body.collides(playerGroup, bulletHitPlayer);
     });
 
@@ -264,13 +280,20 @@ function loadLevel(levelNum){
     text.callAllExists('kill', true);
     bullets.callAllExists('kill', true);
     enemyBullets.callAllExists('kill', true);
+    health.callAllExists('kill', true);
     text.forEach(function(pt){
         var pos = pt.z-1;
         var type = level[pos];
-        var enemy;
+        var enemy, heart;
         var aiType = aiTypes[type];
         if(type === 383){
             //skip, used elsewhere
+        }else if(type === 43 || type === 299){
+            heart = health.getFirstExists(false);
+            if(heart){
+                heart.reset(p2x(pos)*WIDTH+OFFSETX, p2y(pos)*WIDTH+OFFSETY, 1);
+                heart.animations.play('idle');
+            }
         }else if(aiType){
             enemy = enemies.getFirstExists(false);
             if(enemy){
@@ -280,6 +303,7 @@ function loadLevel(levelNum){
                 };
                 enemy.reset(p2x(pos)*WIDTH+OFFSETX, p2y(pos)*WIDTH+OFFSETY, enemy.ai.constants.health);
                 enemy.frame = type;
+                enemy.animations.stop();
                 playAnimation(enemy, enemy.ai.constants.anim.idle);
             }
         }else if(type > 0){
@@ -414,16 +438,18 @@ function bulletHitText(bullet, text) {
 
 function enemyHitPlayer(enemy, player) {
     var playerDamage = player.sprite.ai.constants.damage;
-    if(playerDamage > 0){
+    if(playerDamage){
         playAnimation(enemy.sprite, enemy.sprite.ai.constants.anim.hit);
         enemy.sprite.damage(playerDamage);
         enemy.sprite.ai.stunned = game.time.now+2000;
     }
     var enemyDamage = enemy.sprite.ai.constants.damage;
-    if(enemyDamage > 0){
+    if(enemyDamage > 0 && player.sprite.invuln < game.time.now){
         // playAnimation(player.sprite, player.sprite.ai.constants.anim.hit);
         player.sprite.damage(enemyDamage);
+        player.sprite.animations.play('hit');
         sfxExplosion.play();
+        player.sprite.invuln = game.time.now+player.sprite.ai.constants.invulnTime;
     }
     updateHealthHUD();
 }
@@ -438,12 +464,21 @@ function bulletHitEnemy(bullet, enemy) {
     }
 }
 
+function playerHitHeart(heart, player){
+    if(player.sprite.health < player.sprite.maxHealth){
+        heart.sprite.kill();
+        player.sprite.health = player.sprite.health+1;
+        updateHealthHUD();
+    }
+}
+
 function bulletHitPlayer(bullet, player) {
     bullet.sprite.kill();
-    // player.sprite.animations.play('damaged');
     var damage = bullet.sprite.firedBy.ai.constants.bulletDamage;
-    if(damage > 0){
+    if(damage > 0 && player.sprite.invuln < game.time.now){
+        player.sprite.animations.play('hit');
         player.sprite.damage(damage);
+        player.sprite.invuln = game.time.now+player.sprite.ai.constants.invulnTime;
         sfxEnemyDie.play();
     }
     updateHealthHUD();

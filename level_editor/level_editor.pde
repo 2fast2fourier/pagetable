@@ -8,6 +8,9 @@ int s = 0, boundX, boundY;
 int selectX = 10, selectY, selectColCount, selectWidth, selectHeight, selectCount;
 boolean unsaved = false, kbMode = false;
 int kbPos = -1;
+int randMode = 0;
+
+int[] randInvuln = {219, 220, 221, 222, 223, 475, 476, 477, 478, 479, 178, 434, 433, 177};
 
 PImage[] textMap;
 
@@ -70,7 +73,17 @@ void draw(){
             unsaved = true;
           }
         }else{
-          if(level.getInt(tar) != s){
+          if(randMode == 1){
+            level.setInt(tar, randInvuln[int(random(randInvuln.length))]);
+            unsaved = true;
+          }else if(randMode == 2){
+            int selection = int(random(510));
+            if(selection == 383){
+              selection = int(random(382));
+            }
+            level.setInt(tar, selection);
+            unsaved = true;
+          }else if(level.getInt(tar) != s){
             level.setInt(tar, s);
             unsaved = true;
           }
@@ -100,6 +113,14 @@ void draw(){
     text("Unsaved Changes (Press S to Save)", selectX, selectY-10);
   }
   
+  if(randMode == 1){
+    fill(255,192,0);
+    text("Random: Wall", selectX+400, selectY-10);
+  }else if(randMode == 2){
+    fill(255,192,0);
+    text("Random: All", selectX+400, selectY-10);
+  }
+  
   if(kbMode){
     fill(255,192,0);
     text("Keyboard Input "+kbPos, selectX+400, selectY-10);
@@ -109,7 +130,7 @@ void draw(){
   }
   
   fill(255,192,0,255);
-  text("Selected: "+s, boundX*tileSize-400, selectY-10);
+  text("Selected: "+s, boundX*tileSize-500, selectY-10);
   text("Levels: "+levelCount, boundX*tileSize-200, selectY);
   fill(255, 255, 255, 255);
   for(int ix=0;ix<levelCount;ix++){
@@ -191,6 +212,15 @@ void keyPressed(KeyEvent event){
   }
   if(pressed == '-'){
     switchLevel(selectedLevel-1);
+  }
+  if(pressed == '='){
+    randMode = 0;
+  }
+  if(pressed == '/'){
+    randMode = 1;
+  }
+  if(pressed == '*'){
+    randMode = 2;
   }
   if(code == DOWN){
     switchLevel(selectedLevel+levelColumns);
