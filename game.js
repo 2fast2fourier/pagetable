@@ -182,7 +182,7 @@ function create() {
     player.body.fixedRotation = true;
     player.body.setCollisionGroup(playerGroup);
     player.body.collides([textGroup, enemyGroup, enemyBulletGroup, heartGroup]);
-    player.animations.add('hit', [0,383,0,383,0,383,0,383,0,383,0,383,0,383,0,383], 16);
+    player.animations.add('hit', [127,383,127,383,127,383,127,383,127,383,127,383,127,383,127,383], 16);
     player.ai = {
         constants: PLAYER_CONSTANTS
     };
