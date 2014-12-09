@@ -402,6 +402,7 @@ function update() {
             player.animations.play('hit');
             player.alive = true;
             deadText.visible = false;
+            updateHealthHUD();
         }
     }
 
