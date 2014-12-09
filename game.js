@@ -117,6 +117,7 @@ var paused = false;
 var bulletGroup, textGroup, playerGroup, enemyGroup, enemyBulletGroup;
 var sfxFire, sfxExplosion, sfxEnemyDie;
 var bullets, enemyBullets, healthHUD;
+var deadText;
 
 function create() {
     var playerSpawn = 200;
@@ -185,6 +186,9 @@ function create() {
     player.ai = {
         constants: PLAYER_CONSTANTS
     };
+    player.events.onKilled.add(function(){
+        deadText.visible = true;
+    });
     player.invuln = game.time.now;
 
     healthHUD = game.add.group();
@@ -257,6 +261,11 @@ function create() {
     fire = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
 
     loadLevel(levelNumber);
+
+    deadText = game.add.text(260, 286,'YOU HAVE DIED, (SPACE TO RESTART)');
+    deadText.addColor('#FFBF00', 0);
+    deadText.fontSize = 14;
+    deadText.visible = false;
     
 }
 
@@ -387,6 +396,13 @@ function update() {
                 enemy.body.damping = 0.9;
             }
         });
+    }else{
+        if(!player.alive && fire.isDown){
+            player.reset(player.x, player.y, player.maxHealth);
+            player.animations.play('hit');
+            player.alive = true;
+            deadText.visible = false;
+        }
     }
 
 }
@@ -420,7 +436,6 @@ function playAnimation(sprite, anim){
 }
 
 function render() {
-    // game.debug.inputInfo(100, 100);
 
 }
 
@@ -445,7 +460,6 @@ function enemyHitPlayer(enemy, player) {
     }
     var enemyDamage = enemy.sprite.ai.constants.damage;
     if(enemyDamage > 0 && player.sprite.invuln < game.time.now){
-        // playAnimation(player.sprite, player.sprite.ai.constants.anim.hit);
         player.sprite.damage(enemyDamage);
         player.sprite.animations.play('hit');
         sfxExplosion.play();
