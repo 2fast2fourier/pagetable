@@ -235,7 +235,7 @@ function create() {
 
     bullets = game.add.group();
     bullets.createMultiple(20, 'termfont', 254);
-    game.physics.p2.enable(bullets, true);
+    game.physics.p2.enable(bullets);
     bullets.setAll('outOfBoundsKill', true);
     bullets.setAll('checkWorldBounds', true);
     bullets.forEach(function(bullet){
@@ -246,8 +246,8 @@ function create() {
     });
 
     enemyBullets = game.add.group();
-    enemyBullets.createMultiple(20, 'termfont', 256);
-    game.physics.p2.enable(enemyBullets, true);
+    enemyBullets.createMultiple(20, 'termfont', 254);
+    game.physics.p2.enable(enemyBullets);
     enemyBullets.setAll('outOfBoundsKill', true);
     enemyBullets.setAll('checkWorldBounds', true);
     enemyBullets.forEach(function(bullet){
